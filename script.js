@@ -44,7 +44,7 @@ form.addEventListener("submit", (event) => {
   );
 
   statusText.textContent = "Opening your email app with the message prepared.";
-  window.location.href = `mailto:admin@lexvora.in?subject=${subject}&body=${body}`;
+  window.location.href = `mailto:support@lexvora.in?subject=${subject}&body=${body}`;
 });
 
 portalForms.forEach((portalForm) => {
