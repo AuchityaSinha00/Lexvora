@@ -38,7 +38,7 @@ form.addEventListener("submit", (event) => {
     return;
   }
 
-  const subject = encodeURIComponent(`Lexvora admin query: ${topic}`);
+  const subject = encodeURIComponent(`LexVora admin query: ${topic}`);
   const body = encodeURIComponent(
     `Name: ${name}\nEmail: ${email}\nTopic: ${topic}\n\nMessage:\n${message}`
   );

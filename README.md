@@ -1,6 +1,6 @@
-# Lexvora Website
+# LexVora Website
 
-Static website for Lexvora, a professional guidance platform with information sections, customer login, admin login, and admin contact flow.
+Static website for LexVora, a professional guidance platform with information sections, customer login, admin login, and admin contact flow.
 
 ## Deploy on GitHub Pages
 
