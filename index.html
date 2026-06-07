@@ -28,6 +28,10 @@
         <a href="#home">Home</a>
         <a href="#about">About Us</a>
         <a href="#login">Login</a>
+        <button class="nav-logout" type="button" data-logout>
+          <i data-lucide="log-out"></i>
+          Logout
+        </button>
       </nav>
     </header>
 
@@ -311,6 +315,160 @@
         </form>
       </section>
     </main>
+
+    <section class="app-page customer-home" id="customer-home" data-app-page="customer" aria-label="Customer home">
+      <div class="app-hero">
+        <span class="section-kicker">Customer Home</span>
+        <h1>Find the right lawyer for your legal need.</h1>
+        <p>
+          Search by specialization, city, or court name. We will share your contact and enquiry
+          details with the selected lawyer, and share the lawyer's contact details with you.
+        </p>
+      </div>
+
+      <div class="workflow-strip" aria-label="Customer legal help process">
+        <article>
+          <span>01</span>
+          <h3>Search and select</h3>
+          <p>Choose a lawyer based on specialization, city, or court name.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Details are shared</h3>
+          <p>Your enquiry goes to the lawyer, and lawyer contact details are shared with you.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Discuss directly</h3>
+          <p>Call or meet the lawyer and discuss your legal issue one-to-one.</p>
+        </article>
+      </div>
+
+      <form class="case-form" id="lawyerEnquiryForm">
+        <div class="form-section-title">
+          <span class="section-kicker">Lawyer Search</span>
+          <h2>Tell us what kind of help you need</h2>
+        </div>
+        <div class="form-grid">
+          <label>
+            Specialization
+            <select name="specialization" required>
+              <option value="">Select specialization</option>
+              <option>Family Law</option>
+              <option>Criminal Law</option>
+              <option>Property Law</option>
+              <option>Corporate Law</option>
+              <option>Civil Litigation</option>
+            </select>
+          </label>
+          <label>
+            City
+            <input type="text" name="city" placeholder="Example: Delhi" required />
+          </label>
+          <label>
+            Court name
+            <input type="text" name="court" placeholder="Example: Delhi High Court" required />
+          </label>
+          <label>
+            Select lawyer
+            <select name="lawyer" required>
+              <option value="">Choose a lawyer</option>
+              <option>Adv. Riya Sharma - Family Law, Delhi</option>
+              <option>Adv. Arjun Mehta - Criminal Law, Mumbai</option>
+              <option>Adv. Kavya Rao - Property Law, Bengaluru</option>
+              <option>Adv. Nikhil Suri - Corporate Law, Delhi</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-section-title compact">
+          <span class="section-kicker">Contact & Enquiry</span>
+          <h2>Your details</h2>
+        </div>
+        <div class="form-grid">
+          <label>
+            Full name
+            <input type="text" name="clientName" autocomplete="name" required />
+          </label>
+          <label>
+            Phone number
+            <input type="tel" name="phone" autocomplete="tel" required />
+          </label>
+          <label>
+            Email address
+            <input type="email" name="clientEmail" autocomplete="email" required />
+          </label>
+          <label>
+            Preferred contact method
+            <select name="contactMethod" required>
+              <option value="">Select method</option>
+              <option>Phone call</option>
+              <option>WhatsApp</option>
+              <option>Email</option>
+              <option>In-person meeting</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          Legal issue summary
+          <textarea
+            name="legalIssue"
+            rows="5"
+            placeholder="Briefly describe your legal issue and any urgency."
+            required
+          ></textarea>
+        </label>
+        <button class="button primary form-submit" type="submit">
+          <i data-lucide="send"></i>
+          Submit Enquiry
+        </button>
+        <p class="form-status" id="caseFormStatus" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="app-page admin-home" id="admin-home" data-app-page="admin" aria-label="Admin home">
+      <div class="app-hero admin-app-hero">
+        <span class="section-kicker">Admin Home</span>
+        <h1>Manage customer lawyer enquiries.</h1>
+        <p>
+          Review incoming enquiries, match customers with the right lawyer, and track whether
+          contact details have been shared.
+        </p>
+      </div>
+
+      <div class="admin-board">
+        <article class="admin-card">
+          <span class="status-chip new">New</span>
+          <h3>Family law consultation</h3>
+          <p>Customer needs a Delhi-based family lawyer for a mediation matter.</p>
+          <dl>
+            <div>
+              <dt>Selected lawyer</dt>
+              <dd>Adv. Riya Sharma</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>Awaiting admin review</dd>
+            </div>
+          </dl>
+        </article>
+        <article class="admin-card">
+          <span class="status-chip shared">Shared</span>
+          <h3>Property documentation</h3>
+          <p>Customer requested a Bengaluru property lawyer for sale deed review.</p>
+          <dl>
+            <div>
+              <dt>Selected lawyer</dt>
+              <dd>Adv. Kavya Rao</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>Details shared</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
+    </section>
 
     <footer class="site-footer">
       <a class="brand" href="#home" aria-label="LexVora home">

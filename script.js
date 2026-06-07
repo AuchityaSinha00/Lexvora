@@ -8,6 +8,22 @@ const loginModal = document.querySelector("#loginModal");
 const loginTriggers = document.querySelectorAll("[data-login-trigger]");
 const loginPanels = document.querySelectorAll("[data-login-panel]");
 const loginCloseButtons = document.querySelectorAll("[data-login-close]");
+const logoutButtons = document.querySelectorAll("[data-logout]");
+const lawyerEnquiryForm = document.querySelector("#lawyerEnquiryForm");
+const caseFormStatus = document.querySelector("#caseFormStatus");
+
+const demoUsers = {
+  Customer: {
+    email: "customer@lexvora.in",
+    password: "Customer@123",
+    role: "customer",
+  },
+  Admin: {
+    email: "admin@lexvora.in",
+    password: "Admin@123",
+    role: "admin",
+  },
+};
 
 function setHeaderState() {
   header.classList.toggle("is-scrolled", window.scrollY > 12);
@@ -44,6 +60,22 @@ function closeLoginModal() {
   document.body.classList.remove("modal-open");
 }
 
+function showRoleHome(role) {
+  document.body.classList.add("is-authenticated");
+  document.body.dataset.role = role;
+  closeLoginModal();
+  window.location.hash = role === "admin" ? "admin-home" : "customer-home";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function logout() {
+  document.body.classList.remove("is-authenticated");
+  delete document.body.dataset.role;
+  portalForms.forEach((portalForm) => portalForm.reset());
+  window.location.hash = "home";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 loginTriggers.forEach((trigger) => {
   trigger.addEventListener("click", () => {
     openLoginModal(trigger.dataset.loginTrigger);
@@ -58,6 +90,10 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && loginModal.classList.contains("is-open")) {
     closeLoginModal();
   }
+});
+
+logoutButtons.forEach((button) => {
+  button.addEventListener("click", logout);
 });
 
 form.addEventListener("submit", (event) => {
@@ -89,8 +125,25 @@ portalForms.forEach((portalForm) => {
 
     const portalName = portalForm.dataset.portal || "Portal";
     const portalStatus = portalForm.querySelector(".portal-status");
-    portalStatus.textContent = `${portalName} login is ready for backend connection.`;
+    const credentials = demoUsers[portalName];
+    const email = portalForm.elements.email.value.trim();
+    const password = portalForm.elements.password.value;
+
+    if (email === credentials.email && password === credentials.password) {
+      portalStatus.textContent = "Login successful. Opening your home page.";
+      showRoleHome(credentials.role);
+      return;
+    }
+
+    portalStatus.textContent = "Invalid demo login details. Please check the email and password.";
   });
+});
+
+lawyerEnquiryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  caseFormStatus.textContent =
+    "Demo enquiry submitted. In the real system, these details will be shared with the selected lawyer and their contact details will be shared with you.";
+  lawyerEnquiryForm.reset();
 });
 
 window.addEventListener("load", () => {
