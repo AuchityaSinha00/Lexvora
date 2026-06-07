@@ -4,16 +4,20 @@ import { extname, join, normalize } from "node:path";
 
 const root = process.cwd();
 const port = Number(process.env.PORT || 8080);
+const appEnv = process.env.APP_ENV || "dev";
+const appName = process.env.APP_NAME || "lexvora";
+const awsRegion = process.env.AWS_REGION || "ap-south-1";
+const supportEmail = process.env.SUPPORT_EMAIL || "support@lexvora.in";
 
 const users = {
   customer: {
-    email: "customer@lexvora.in",
-    password: "Customer@123",
+    email: process.env.CUSTOMER_DEMO_EMAIL || "customer@lexvora.in",
+    password: process.env.CUSTOMER_DEMO_PASSWORD || "Customer@123",
     role: "customer",
   },
   admin: {
-    email: "admin@lexvora.in",
-    password: "Admin@123",
+    email: process.env.ADMIN_DEMO_EMAIL || "admin@lexvora.in",
+    password: process.env.ADMIN_DEMO_PASSWORD || "Admin@123",
     role: "admin",
   },
 };
@@ -140,6 +144,27 @@ function simulateRefund(request) {
 }
 
 async function handleApi(request, response, url) {
+  if (request.method === "GET" && url.pathname === "/api/health") {
+    sendJson(response, 200, {
+      status: "ok",
+      app: appName,
+      environment: appEnv,
+      region: awsRegion,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/runtime") {
+    sendJson(response, 200, {
+      app: appName,
+      environment: appEnv,
+      region: awsRegion,
+      supportEmail,
+    });
+    return;
+  }
+
   if (request.method === "POST" && url.pathname === "/api/login") {
     const body = await readBody(request);
     const user = users[body.role];
@@ -255,7 +280,7 @@ async function handleApi(request, response, url) {
     const body = await readBody(request);
     sendJson(response, 200, {
       message: "Contact request captured in mock API.",
-      mailTo: "support@lexvora.in",
+      mailTo: supportEmail,
       request: body,
     });
     return;
@@ -294,5 +319,5 @@ createServer(async (request, response) => {
     sendJson(response, 400, { error: error.message || "Request failed" });
   }
 }).listen(port, () => {
-  console.log(`LexVora mock API app running at http://localhost:${port}`);
+  console.log(`LexVora mock API app running at http://localhost:${port} (${appEnv})`);
 });

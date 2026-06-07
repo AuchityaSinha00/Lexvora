@@ -1,0 +1,54 @@
+{
+  "family": "__TASK_FAMILY__",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::__AWS_ACCOUNT_ID__:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "lexvora-app",
+      "image": "__IMAGE_URI__",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "APP_ENV", "value": "__APP_ENV__" },
+        { "name": "APP_NAME", "value": "lexvora" },
+        { "name": "PORT", "value": "8080" },
+        { "name": "AWS_REGION", "value": "__AWS_REGION__" },
+        { "name": "SUPPORT_EMAIL", "value": "support@lexvora.in" }
+      ],
+      "secrets": [
+        {
+          "name": "CUSTOMER_DEMO_PASSWORD",
+          "valueFrom": "arn:aws:ssm:__AWS_REGION__:__AWS_ACCOUNT_ID__:parameter/lexvora/__APP_ENV__/customer_demo_password"
+        },
+        {
+          "name": "ADMIN_DEMO_PASSWORD",
+          "valueFrom": "arn:aws:ssm:__AWS_REGION__:__AWS_ACCOUNT_ID__:parameter/lexvora/__APP_ENV__/admin_demo_password"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/lexvora/__APP_ENV__",
+          "awslogs-region": "__AWS_REGION__",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/api/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 10
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+.git
+github-push
+node_modules
+npm-debug.log
+*.zip
+.DS_Store

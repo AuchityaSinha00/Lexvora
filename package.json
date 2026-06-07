@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.mjs"
+    "start": "node server.mjs",
+    "start:dev": "node --env-file=config/dev.env server.mjs",
+    "start:test": "node --env-file=config/test.env server.mjs",
+    "start:prod": "node --env-file=config/prod.env server.mjs",
+    "check": "node --check server.mjs && node --check script.js"
   }
 }
