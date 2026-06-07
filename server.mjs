@@ -1,6 +1,7 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
+import { createRepository } from "./db.mjs";
 
 const root = process.cwd();
 const port = Number(process.env.PORT || 8080);
@@ -8,6 +9,18 @@ const appEnv = process.env.APP_ENV || "dev";
 const appName = process.env.APP_NAME || "lexvora";
 const awsRegion = process.env.AWS_REGION || "ap-south-1";
 const supportEmail = process.env.SUPPORT_EMAIL || "support@lexvora.in";
+const dbClient = process.env.DB_CLIENT || "memory";
+const databaseUrl = process.env.DATABASE_URL || "";
+const dbSsl = process.env.DB_SSL === "true";
+const dbPoolMax = Number(process.env.DB_POOL_MAX || 10);
+
+// Repository is the single data access point. Use DB_CLIENT=postgres in prod.
+const repository = await createRepository({
+  dbClient,
+  databaseUrl,
+  dbSsl,
+  dbPoolMax,
+});
 
 const users = {
   customer: {
@@ -22,47 +35,6 @@ const users = {
   },
 };
 
-let lawyers = [
-  {
-    id: "lawyer-1",
-    name: "Adv. Riya Sharma",
-    phone: "9876543210",
-    email: "riya.sharma@example.com",
-    specialization: "Family Law",
-    city: "Delhi",
-    court: "Delhi High Court",
-    experience: "8 years",
-    mode: "Phone and In-person",
-    summary: "Handles family mediation, divorce, maintenance, and custody matters.",
-  },
-  {
-    id: "lawyer-2",
-    name: "Adv. Arjun Mehta",
-    phone: "9988776655",
-    email: "arjun.mehta@example.com",
-    specialization: "Criminal Law",
-    city: "Mumbai",
-    court: "Bombay High Court",
-    experience: "11 years",
-    mode: "Phone",
-    summary: "Supports bail, FIR, criminal defence, and urgent legal consultations.",
-  },
-  {
-    id: "lawyer-3",
-    name: "Adv. Kavya Rao",
-    phone: "9123456780",
-    email: "kavya.rao@example.com",
-    specialization: "Property Law",
-    city: "Bengaluru",
-    court: "City Civil Court Bengaluru",
-    experience: "7 years",
-    mode: "Video Call",
-    summary: "Works on property documentation, sale deed review, and ownership disputes.",
-  },
-];
-
-let consultationRequests = [];
-
 const types = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -73,10 +45,6 @@ const types = {
   ".jpeg": "image/jpeg",
   ".svg": "image/svg+xml",
 };
-
-function createId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 
 function sendJson(response, status, payload) {
   response.writeHead(status, {
@@ -111,30 +79,6 @@ function readBody(request) {
   });
 }
 
-function publicLawyer(lawyer) {
-  return {
-    id: lawyer.id,
-    name: lawyer.name,
-    specialization: lawyer.specialization,
-    city: lawyer.city,
-    court: lawyer.court,
-    experience: lawyer.experience,
-    mode: lawyer.mode,
-    summary: lawyer.summary,
-  };
-}
-
-function lawyerMatches(lawyer, filters) {
-  const specializationMatch =
-    !filters.specialization || lawyer.specialization === filters.specialization;
-  const cityMatch =
-    !filters.city || lawyer.city.toLowerCase().includes(filters.city.toLowerCase());
-  const courtMatch =
-    !filters.court || lawyer.court.toLowerCase().includes(filters.court.toLowerCase());
-
-  return specializationMatch && cityMatch && courtMatch;
-}
-
 function simulateSms(request) {
   return `Demo SMS sent to ${request.customerPhone}: ${request.lawyerName}, phone ${request.lawyerPhone}.`;
 }
@@ -150,6 +94,7 @@ async function handleApi(request, response, url) {
       app: appName,
       environment: appEnv,
       region: awsRegion,
+      database: await repository.health(),
       timestamp: new Date().toISOString(),
     });
     return;
@@ -161,6 +106,7 @@ async function handleApi(request, response, url) {
       environment: appEnv,
       region: awsRegion,
       supportEmail,
+      dbClient,
     });
     return;
   }
@@ -184,14 +130,14 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === "GET" && url.pathname === "/api/lawyers") {
+    const lawyers = await repository.listLawyers();
     sendJson(response, 200, { lawyers });
     return;
   }
 
   if (request.method === "POST" && url.pathname === "/api/lawyers") {
     const body = await readBody(request);
-    const lawyer = {
-      id: createId("lawyer"),
+    const lawyer = await repository.createLawyer({
       name: body.name,
       phone: body.phone,
       email: body.email,
@@ -201,9 +147,7 @@ async function handleApi(request, response, url) {
       experience: body.experience,
       mode: body.mode,
       summary: body.summary,
-    };
-
-    lawyers.push(lawyer);
+    });
     sendJson(response, 201, { lawyer });
     return;
   }
@@ -214,40 +158,24 @@ async function handleApi(request, response, url) {
       city: url.searchParams.get("city") || "",
       court: url.searchParams.get("court") || "",
     };
-    const matches = lawyers.filter((lawyer) => lawyerMatches(lawyer, filters)).map(publicLawyer);
+    const matches = await repository.searchLawyers(filters);
     sendJson(response, 200, { lawyers: matches });
     return;
   }
 
   if (request.method === "GET" && url.pathname === "/api/requests") {
-    sendJson(response, 200, { requests: consultationRequests });
+    const requests = await repository.listRequests();
+    sendJson(response, 200, { requests });
     return;
   }
 
   if (request.method === "POST" && url.pathname === "/api/requests") {
     const body = await readBody(request);
-    const selectedLawyers = lawyers.filter((lawyer) => body.lawyerIds?.includes(lawyer.id));
-    const createdAt = new Date();
-    const createdRequests = selectedLawyers.map((lawyer) => ({
-      id: createId("request"),
-      lawyerId: lawyer.id,
-      lawyerName: lawyer.name,
-      lawyerPhone: lawyer.phone,
-      customerName: body.enquiry.customerName,
-      customerPhone: body.enquiry.customerPhone,
-      customerEmail: body.enquiry.customerEmail,
-      legalIssue: body.enquiry.legalIssue,
-      gateway: body.payment.gateway,
-      paymentOption: body.payment.paymentOption,
-      paymentReference: body.payment.paymentReference,
-      fee: 99,
-      status: "Pending",
-      createdAt: createdAt.toISOString(),
-      refundDeadline: "48 working hours",
-      adminNote: "Awaiting admin approval. Refund applies if rejected or not approved in 48 working hours.",
-    }));
-
-    consultationRequests = [...consultationRequests, ...createdRequests];
+    const createdRequests = await repository.createConsultationRequests({
+      lawyerIds: body.lawyerIds || [],
+      enquiry: body.enquiry,
+      payment: body.payment,
+    });
     sendJson(response, 201, { requests: createdRequests });
     return;
   }
@@ -255,24 +183,32 @@ async function handleApi(request, response, url) {
   const requestActionMatch = url.pathname.match(/^\/api\/requests\/([^/]+)\/(approve|reject)$/);
   if (request.method === "POST" && requestActionMatch) {
     const [, requestId, action] = requestActionMatch;
-    const requestItem = consultationRequests.find((item) => item.id === requestId);
+    const requests = await repository.listRequests();
+    const requestItem = requests.find((item) => item.id === requestId);
 
     if (!requestItem) {
       sendJson(response, 404, { error: "Request not found" });
       return;
     }
 
+    let updatedRequest;
     if (action === "approve") {
-      requestItem.status = "Approved";
-      requestItem.adminNote = `Approved. ${simulateSms(requestItem)}`;
-      requestItem.smsStatus = "Sent";
+      updatedRequest = await repository.updateRequestStatus(
+        requestId,
+        "Approved",
+        `Approved. ${simulateSms(requestItem)}`,
+        { smsStatus: "Sent" }
+      );
     } else {
-      requestItem.status = "Rejected";
-      requestItem.adminNote = `Rejected by admin. ${simulateRefund(requestItem)}`;
-      requestItem.refundStatus = "Initiated";
+      updatedRequest = await repository.updateRequestStatus(
+        requestId,
+        "Rejected",
+        `Rejected by admin. ${simulateRefund(requestItem)}`,
+        { refundStatus: "Initiated" }
+      );
     }
 
-    sendJson(response, 200, { request: requestItem });
+    sendJson(response, 200, { request: updatedRequest });
     return;
   }
 

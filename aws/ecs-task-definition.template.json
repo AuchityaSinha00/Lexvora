@@ -22,9 +22,16 @@
         { "name": "APP_NAME", "value": "lexvora" },
         { "name": "PORT", "value": "8080" },
         { "name": "AWS_REGION", "value": "__AWS_REGION__" },
-        { "name": "SUPPORT_EMAIL", "value": "support@lexvora.in" }
+        { "name": "SUPPORT_EMAIL", "value": "support@lexvora.in" },
+        { "name": "DB_CLIENT", "value": "__DB_CLIENT__" },
+        { "name": "DB_SSL", "value": "__DB_SSL__" },
+        { "name": "DB_POOL_MAX", "value": "__DB_POOL_MAX__" }
       ],
       "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:ssm:__AWS_REGION__:__AWS_ACCOUNT_ID__:parameter/lexvora/__APP_ENV__/database_url"
+        },
         {
           "name": "CUSTOMER_DEMO_PASSWORD",
           "valueFrom": "arn:aws:ssm:__AWS_REGION__:__AWS_ACCOUNT_ID__:parameter/lexvora/__APP_ENV__/customer_demo_password"

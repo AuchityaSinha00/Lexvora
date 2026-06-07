@@ -3,7 +3,10 @@ FROM node:22-alpine
 WORKDIR /app
 
 COPY package.json ./
-COPY index.html styles.css script.js server.mjs ./
+RUN npm install --omit=dev
+
+COPY index.html styles.css script.js server.mjs db.mjs ./
+COPY db ./db
 
 ENV NODE_ENV=production
 ENV PORT=8080

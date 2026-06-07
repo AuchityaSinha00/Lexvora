@@ -23,6 +23,9 @@ pipeline {
           env.AWS_ECS_CLUSTER = values.AWS_ECS_CLUSTER
           env.AWS_ECS_SERVICE = values.AWS_ECS_SERVICE
           env.AWS_ECS_TASK_FAMILY = values.AWS_ECS_TASK_FAMILY
+          env.DB_CLIENT = values.DB_CLIENT
+          env.DB_SSL = values.DB_SSL
+          env.DB_POOL_MAX = values.DB_POOL_MAX
           env.ECR_REGISTRY = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com"
           env.IMAGE_TAG = "${env.BUILD_NUMBER}-${(env.GIT_COMMIT ?: 'local').take(7)}"
           env.IMAGE_URI = "${env.ECR_REGISTRY}/${env.AWS_ECR_REPOSITORY}:${env.IMAGE_TAG}"
@@ -69,6 +72,9 @@ pipeline {
               -e "s#__IMAGE_URI__#${IMAGE_URI}#g" \
               -e "s#__APP_ENV__#${APP_ENV}#g" \
               -e "s#__AWS_REGION__#${AWS_REGION}#g" \
+              -e "s#__DB_CLIENT__#${DB_CLIENT}#g" \
+              -e "s#__DB_SSL__#${DB_SSL}#g" \
+              -e "s#__DB_POOL_MAX__#${DB_POOL_MAX}#g" \
               aws/ecs-task-definition.template.json > task-definition.json
 
             TASK_DEF_ARN=$(aws ecs register-task-definition \

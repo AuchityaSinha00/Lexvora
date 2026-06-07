@@ -54,7 +54,39 @@ Environment files live in `config/`:
 - `config/test.env`
 - `config/prod.env`
 
-Each file contains AWS ECS/ECR names, app environment, region, support email, and demo credentials. Replace production demo passwords with AWS SSM Parameter Store or another secret manager before going live.
+Each file contains AWS ECS/ECR names, app environment, region, support email, database mode, and demo credentials. Replace production demo passwords and `DATABASE_URL` with AWS SSM Parameter Store or another secret manager before going live.
+
+## Database Setup
+
+The app now uses a repository layer in `db.mjs`.
+
+Supported database modes:
+
+- `DB_CLIENT=memory`: local mock storage for dev/test demos
+- `DB_CLIENT=postgres`: production-ready PostgreSQL connectivity
+
+PostgreSQL schema:
+
+```bash
+psql "$DATABASE_URL" -f db/schema.sql
+```
+
+Production environment variables:
+
+```text
+DB_CLIENT=postgres
+DATABASE_URL=postgres://USER:PASSWORD@HOST:5432/DB_NAME
+DB_SSL=true
+DB_POOL_MAX=10
+```
+
+For AWS ECS, the provided task-definition template expects this SSM parameter:
+
+```text
+/lexvora/<env>/database_url
+```
+
+The database adapter is intentionally isolated from route handlers, so a future move to RDS, Aurora PostgreSQL, or another persistent database only needs repository-level changes.
 
 ## AWS + Jenkins
 
@@ -82,3 +114,4 @@ AWS resources expected per environment:
 - `ecsTaskExecutionRole`
 - CloudWatch log group `/ecs/lexvora/<env>`
 - SSM parameters for production secrets if using the provided task template
+- RDS/Aurora PostgreSQL database with `db/schema.sql` applied when `DB_CLIENT=postgres`
