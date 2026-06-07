@@ -22,95 +22,24 @@ const lawyerProfileStatus = document.querySelector("#lawyerProfileStatus");
 const adminLawyerList = document.querySelector("#adminLawyerList");
 const adminRequestList = document.querySelector("#adminRequestList");
 
-const demoUsers = {
-  Customer: {
-    email: "customer@lexvora.in",
-    password: "Customer@123",
-    role: "customer",
-  },
-  Admin: {
-    email: "admin@lexvora.in",
-    password: "Admin@123",
-    role: "admin",
-  },
-};
-
-const storageKeys = {
-  lawyers: "lexvoraLawyers",
-  requests: "lexvoraConsultationRequests",
-};
-
-const seedLawyers = [
-  {
-    id: "lawyer-1",
-    name: "Adv. Riya Sharma",
-    phone: "9876543210",
-    email: "riya.sharma@example.com",
-    specialization: "Family Law",
-    city: "Delhi",
-    court: "Delhi High Court",
-    experience: "8 years",
-    mode: "Phone and In-person",
-    summary: "Handles family mediation, divorce, maintenance, and custody matters.",
-  },
-  {
-    id: "lawyer-2",
-    name: "Adv. Arjun Mehta",
-    phone: "9988776655",
-    email: "arjun.mehta@example.com",
-    specialization: "Criminal Law",
-    city: "Mumbai",
-    court: "Bombay High Court",
-    experience: "11 years",
-    mode: "Phone",
-    summary: "Supports bail, FIR, criminal defence, and urgent legal consultations.",
-  },
-  {
-    id: "lawyer-3",
-    name: "Adv. Kavya Rao",
-    phone: "9123456780",
-    email: "kavya.rao@example.com",
-    specialization: "Property Law",
-    city: "Bengaluru",
-    court: "City Civil Court Bengaluru",
-    experience: "7 years",
-    mode: "Video Call",
-    summary: "Works on property documentation, sale deed review, and ownership disputes.",
-  },
-];
-
 let selectedLawyerIds = new Set();
 let latestCustomerEnquiry = null;
 
-function readStore(key, fallback) {
-  const saved = window.localStorage.getItem(key);
-  if (!saved) return fallback;
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+  const payload = await response.json();
 
-  try {
-    return JSON.parse(saved);
-  } catch {
-    return fallback;
+  if (!response.ok) {
+    throw new Error(payload.error || "API request failed");
   }
-}
 
-function writeStore(key, value) {
-  window.localStorage.setItem(key, JSON.stringify(value));
-}
-
-function getLawyers() {
-  return readStore(storageKeys.lawyers, seedLawyers);
-}
-
-function saveLawyers(lawyers) {
-  writeStore(storageKeys.lawyers, lawyers);
-}
-
-function getRequests() {
-  return readStore(storageKeys.requests, []);
-}
-
-function saveRequests(requests) {
-  writeStore(storageKeys.requests, requests);
+  return payload;
 }
 
 function escapeHtml(value) {
@@ -120,10 +49,6 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function createId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function refreshIcons() {
@@ -180,13 +105,16 @@ function closePaymentModal() {
   document.body.classList.remove("modal-open");
 }
 
-function showRoleHome(role) {
+async function showRoleHome(role) {
   document.body.classList.add("is-authenticated");
   document.body.dataset.role = role;
   closeLoginModal();
   window.location.hash = role === "admin" ? "admin-home" : "customer-home";
   window.scrollTo({ top: 0, behavior: "smooth" });
-  renderAdminData();
+
+  if (role === "admin") {
+    await renderAdminData();
+  }
 }
 
 function logout() {
@@ -195,17 +123,6 @@ function logout() {
   portalForms.forEach((portalForm) => portalForm.reset());
   window.location.hash = "home";
   window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function lawyerMatches(lawyer, filters) {
-  const specializationMatch =
-    !filters.specialization || lawyer.specialization === filters.specialization;
-  const cityMatch =
-    !filters.city || lawyer.city.toLowerCase().includes(filters.city.toLowerCase());
-  const courtMatch =
-    !filters.court || lawyer.court.toLowerCase().includes(filters.court.toLowerCase());
-
-  return specializationMatch && cityMatch && courtMatch;
 }
 
 function renderLawyerResults(lawyers) {
@@ -245,13 +162,17 @@ function renderLawyerResults(lawyers) {
     .join("");
 }
 
-function renderAdminData() {
-  renderAdminLawyers();
-  renderAdminRequests();
+async function renderAdminData() {
+  await Promise.all([renderAdminLawyers(), renderAdminRequests()]);
 }
 
-function renderAdminLawyers() {
-  const lawyers = getLawyers();
+async function renderAdminLawyers() {
+  const { lawyers } = await api("/api/lawyers");
+
+  if (!lawyers.length) {
+    adminLawyerList.innerHTML = '<p class="empty-state">No lawyer profiles added yet.</p>';
+    return;
+  }
 
   adminLawyerList.innerHTML = lawyers
     .map(
@@ -271,8 +192,8 @@ function renderAdminLawyers() {
     .join("");
 }
 
-function renderAdminRequests() {
-  const requests = getRequests();
+async function renderAdminRequests() {
+  const { requests } = await api("/api/requests");
 
   if (!requests.length) {
     adminRequestList.innerHTML =
@@ -342,50 +263,57 @@ logoutButtons.forEach((button) => {
   button.addEventListener("click", logout);
 });
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const data = new FormData(form);
-  const name = data.get("name").trim();
-  const email = data.get("email").trim();
-  const topic = data.get("topic");
-  const message = data.get("message").trim();
+  const contactRequest = {
+    name: data.get("name").trim(),
+    email: data.get("email").trim(),
+    topic: data.get("topic"),
+    message: data.get("message").trim(),
+  };
 
-  if (!name || !email || !topic || !message) {
+  if (!contactRequest.name || !contactRequest.email || !contactRequest.topic || !contactRequest.message) {
     statusText.textContent = "Please complete every field before sending.";
     return;
   }
 
-  const subject = encodeURIComponent(`LexVora admin query: ${topic}`);
-  const body = encodeURIComponent(
-    `Name: ${name}\nEmail: ${email}\nTopic: ${topic}\n\nMessage:\n${message}`
-  );
-
-  statusText.textContent = "Opening your email app with the message prepared.";
-  window.location.href = `mailto:support@lexvora.in?subject=${subject}&body=${body}`;
+  try {
+    await api("/api/contact", {
+      method: "POST",
+      body: JSON.stringify(contactRequest),
+    });
+    statusText.textContent = "Contact request captured by mock API.";
+  } catch (error) {
+    statusText.textContent = error.message;
+  }
 });
 
 portalForms.forEach((portalForm) => {
-  portalForm.addEventListener("submit", (event) => {
+  portalForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const portalName = portalForm.dataset.portal || "Portal";
     const portalStatus = portalForm.querySelector(".portal-status");
-    const credentials = demoUsers[portalName];
+    const role = portalName.toLowerCase();
     const email = portalForm.elements.email.value.trim();
     const password = portalForm.elements.password.value;
 
-    if (email === credentials.email && password === credentials.password) {
+    try {
+      const { user } = await api("/api/login", {
+        method: "POST",
+        body: JSON.stringify({ role, email, password }),
+      });
       portalStatus.textContent = "Login successful. Opening your home page.";
-      showRoleHome(credentials.role);
-      return;
+      await showRoleHome(user.role);
+    } catch (error) {
+      portalStatus.textContent = error.message;
     }
-
-    portalStatus.textContent = "Invalid demo login details. Please check the email and password.";
   });
 });
 
-lawyerEnquiryForm.addEventListener("submit", (event) => {
+lawyerEnquiryForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(lawyerEnquiryForm);
   latestCustomerEnquiry = {
@@ -399,10 +327,20 @@ lawyerEnquiryForm.addEventListener("submit", (event) => {
     legalIssue: data.get("legalIssue").trim(),
   };
 
-  const matches = getLawyers().filter((lawyer) => lawyerMatches(lawyer, latestCustomerEnquiry));
-  renderLawyerResults(matches);
-  caseFormStatus.textContent = `${matches.length} lawyer profile(s) found. Select one or many lawyers to request consultation.`;
-  refreshIcons();
+  const params = new URLSearchParams({
+    specialization: latestCustomerEnquiry.specialization,
+    city: latestCustomerEnquiry.city,
+    court: latestCustomerEnquiry.court,
+  });
+
+  try {
+    const { lawyers } = await api(`/api/lawyers/search?${params.toString()}`);
+    renderLawyerResults(lawyers);
+    caseFormStatus.textContent = `${lawyers.length} lawyer profile(s) found. Select one or many lawyers to request consultation.`;
+    refreshIcons();
+  } catch (error) {
+    caseFormStatus.textContent = error.message;
+  }
 });
 
 lawyerResults.addEventListener("change", (event) => {
@@ -432,55 +370,41 @@ requestConsultationButton.addEventListener("click", () => {
   openPaymentModal();
 });
 
-paymentForm.addEventListener("submit", (event) => {
+paymentForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const paymentData = new FormData(paymentForm);
-  const lawyersById = new Map(getLawyers().map((lawyer) => [lawyer.id, lawyer]));
-  const requests = getRequests();
-  const createdAt = new Date();
 
-  selectedLawyerIds.forEach((lawyerId) => {
-    const lawyer = lawyersById.get(lawyerId);
-    if (!lawyer) return;
-
-    requests.push({
-      id: createId("request"),
-      lawyerId,
-      lawyerName: lawyer.name,
-      lawyerPhone: lawyer.phone,
-      customerName: latestCustomerEnquiry.customerName,
-      customerPhone: latestCustomerEnquiry.customerPhone,
-      customerEmail: latestCustomerEnquiry.customerEmail,
-      legalIssue: latestCustomerEnquiry.legalIssue,
-      gateway: paymentData.get("gateway"),
-      paymentOption: paymentData.get("paymentOption"),
-      paymentReference: paymentData.get("paymentReference").trim(),
-      fee: 99,
-      status: "Pending",
-      createdAt: createdAt.toISOString(),
-      refundDeadline: "48 working hours",
-      adminNote: "Awaiting admin approval. Refund applies if rejected or not approved in 48 working hours.",
+  try {
+    const { requests } = await api("/api/requests", {
+      method: "POST",
+      body: JSON.stringify({
+        lawyerIds: [...selectedLawyerIds],
+        enquiry: latestCustomerEnquiry,
+        payment: {
+          gateway: paymentData.get("gateway"),
+          paymentOption: paymentData.get("paymentOption"),
+          paymentReference: paymentData.get("paymentReference").trim(),
+        },
+      }),
     });
-  });
 
-  saveRequests(requests);
-  paymentStatus.textContent = "Payment captured in demo mode. Request sent to admin for approval.";
-  caseFormStatus.textContent = "Your paid request has been sent to admin. You will receive lawyer details by SMS after approval.";
-  selectedLawyerIds = new Set();
-  requestConsultationButton.disabled = true;
-  paymentForm.reset();
-  renderLawyerResults([]);
-  renderAdminRequests();
-  setTimeout(closePaymentModal, 900);
+    paymentStatus.textContent = "Payment captured in demo mode. Request sent to admin for approval.";
+    caseFormStatus.textContent = `${requests.length} paid request(s) sent to admin. You will receive lawyer details by SMS after approval.`;
+    selectedLawyerIds = new Set();
+    requestConsultationButton.disabled = true;
+    paymentForm.reset();
+    renderLawyerResults([]);
+    await renderAdminRequests();
+    setTimeout(closePaymentModal, 900);
+  } catch (error) {
+    paymentStatus.textContent = error.message;
+  }
 });
 
-lawyerProfileForm.addEventListener("submit", (event) => {
+lawyerProfileForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(lawyerProfileForm);
-  const lawyers = getLawyers();
-
-  lawyers.push({
-    id: createId("lawyer"),
+  const lawyer = {
     name: data.get("name").trim(),
     phone: data.get("phone").trim(),
     email: data.get("email").trim(),
@@ -490,40 +414,38 @@ lawyerProfileForm.addEventListener("submit", (event) => {
     experience: data.get("experience").trim(),
     mode: data.get("mode"),
     summary: data.get("summary").trim(),
-  });
+  };
 
-  saveLawyers(lawyers);
-  lawyerProfileStatus.textContent = "Lawyer profile added. Customers can now find this lawyer in search.";
-  lawyerProfileForm.reset();
-  renderAdminLawyers();
-  refreshIcons();
+  try {
+    await api("/api/lawyers", {
+      method: "POST",
+      body: JSON.stringify(lawyer),
+    });
+    lawyerProfileStatus.textContent = "Lawyer profile added through mock API.";
+    lawyerProfileForm.reset();
+    await renderAdminLawyers();
+    refreshIcons();
+  } catch (error) {
+    lawyerProfileStatus.textContent = error.message;
+  }
 });
 
-adminRequestList.addEventListener("click", (event) => {
+adminRequestList.addEventListener("click", async (event) => {
   const actionButton = event.target.closest("[data-request-action]");
   if (!actionButton) return;
 
-  const requests = getRequests();
-  const request = requests.find((item) => item.id === actionButton.dataset.requestId);
-  if (!request) return;
-
-  if (actionButton.dataset.requestAction === "approve") {
-    request.status = "Approved";
-    request.adminNote = `Approved. Demo SMS sent to ${request.customerPhone}: ${request.lawyerName}, phone ${request.lawyerPhone}.`;
-  } else {
-    request.status = "Rejected";
-    request.adminNote = "Rejected by admin. Demo refund of Rs 99 initiated to the customer.";
+  try {
+    await api(`/api/requests/${actionButton.dataset.requestId}/${actionButton.dataset.requestAction}`, {
+      method: "POST",
+    });
+    await renderAdminRequests();
+  } catch (error) {
+    adminRequestList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
   }
-
-  saveRequests(requests);
-  renderAdminRequests();
 });
 
-if (!window.localStorage.getItem(storageKeys.lawyers)) {
-  saveLawyers(seedLawyers);
-}
-
 renderLawyerResults([]);
-renderAdminData();
 
-window.addEventListener("load", refreshIcons);
+window.addEventListener("load", () => {
+  refreshIcons();
+});

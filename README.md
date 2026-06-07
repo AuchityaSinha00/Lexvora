@@ -1,21 +1,39 @@
-# LexVora Website
+# LexVora Mock API App
 
-Static website for LexVora, a professional guidance platform with information sections, customer login, admin login, and admin contact flow.
+LexVora prototype with a Node-based mock API for customer login, admin login, lawyer signup, lawyer search, consultation requests, demo payment, admin approval/rejection, demo SMS messaging, and refund simulation.
 
-## Deploy on GitHub Pages
+## Run Locally
 
-1. Create a public GitHub repository named `lexvora`.
-2. Upload these files to the repository root:
-   - `index.html`
-   - `styles.css`
-   - `script.js`
-   - `.nojekyll`
-3. In GitHub, open `Settings > Pages`.
-4. Under `Build and deployment`, select:
-   - Source: `Deploy from a branch`
-   - Branch: `main`
-   - Folder: `/root`
-5. Save. GitHub will publish the site at a URL like:
-   `https://your-username.github.io/lexvora/`
+```bash
+npm start
+```
 
-To connect `lexvora.in`, add the GitHub Pages custom domain in the same Pages settings and update the domain DNS records with your domain provider.
+Then open:
+
+```text
+http://localhost:8080
+```
+
+## Demo Credentials
+
+Customer:
+`customer@lexvora.in`
+`Customer@123`
+
+Admin:
+`admin@lexvora.in`
+`Admin@123`
+
+## Mock API Routes
+
+- `POST /api/login`
+- `GET /api/lawyers`
+- `POST /api/lawyers`
+- `GET /api/lawyers/search`
+- `GET /api/requests`
+- `POST /api/requests`
+- `POST /api/requests/:id/approve`
+- `POST /api/requests/:id/reject`
+- `POST /api/contact`
+
+GitHub Pages cannot run this API because it only serves static files. Deploy this app on a Node-capable host such as Render, Railway, Fly.io, Vercel server functions, or a VPS.
