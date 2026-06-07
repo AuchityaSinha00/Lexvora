@@ -243,6 +243,11 @@ h1 {
   background: var(--primary-dark);
 }
 
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .button.secondary {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.55);
@@ -635,6 +640,145 @@ body[data-role="admin"] .admin-home {
   box-shadow: 0 8px 24px rgba(23, 33, 33, 0.06);
 }
 
+.lawyer-results {
+  margin-top: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: clamp(22px, 4vw, 36px);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(23, 33, 33, 0.06);
+}
+
+.results-head,
+.admin-section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.results-head h2,
+.admin-section-head h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+}
+
+.lawyer-list,
+.admin-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.lawyer-card,
+.admin-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(23, 33, 33, 0.06);
+}
+
+.lawyer-card.is-selected {
+  border-color: var(--primary);
+  box-shadow: 0 14px 38px rgba(15, 118, 110, 0.14);
+}
+
+.lawyer-card-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.lawyer-card h3,
+.admin-card h3 {
+  margin-bottom: 8px;
+}
+
+.select-lawyer {
+  display: inline-flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: var(--primary-dark);
+  background: var(--soft);
+  white-space: nowrap;
+}
+
+.select-lawyer input {
+  width: auto;
+}
+
+.lawyer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.lawyer-meta span,
+.status-chip {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #ffffff;
+  background: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.lawyer-meta span:nth-child(2) {
+  background: var(--blue);
+}
+
+.lawyer-meta span:nth-child(3) {
+  background: var(--accent);
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.payment-modal {
+  position: fixed;
+  z-index: 55;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.payment-modal.is-open {
+  display: flex;
+}
+
+.payment-dialog h2 {
+  margin-bottom: 12px;
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+}
+
+.payment-note {
+  border-left: 4px solid var(--accent);
+  padding: 12px 0 12px 14px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.payment-form {
+  display: grid;
+  gap: 16px;
+}
+
 .form-section-title {
   max-width: 780px;
 }
@@ -653,28 +797,8 @@ body[data-role="admin"] .admin-home {
   gap: 16px;
 }
 
-.admin-board {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.admin-card {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 24px;
-  background: var(--panel);
-  box-shadow: 0 8px 24px rgba(23, 33, 33, 0.06);
-}
-
 .status-chip {
-  display: inline-flex;
   margin-bottom: 18px;
-  border-radius: 999px;
-  padding: 6px 10px;
-  color: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 900;
 }
 
 .status-chip.new {
@@ -683,6 +807,16 @@ body[data-role="admin"] .admin-home {
 
 .status-chip.shared {
   background: var(--primary);
+}
+
+.status-chip.rejected {
+  background: #a33b3b;
+}
+
+.admin-split {
+  display: grid;
+  gap: 26px;
+  margin-top: 26px;
 }
 
 .admin-card dl {
@@ -707,6 +841,23 @@ body[data-role="admin"] .admin-home {
 .admin-card dd {
   margin: 0;
   font-weight: 800;
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.button.approve {
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.button.reject {
+  color: #ffffff;
+  background: #a33b3b;
 }
 
 .connect-section {
@@ -834,8 +985,15 @@ textarea:focus {
   .portal-actions,
   .workflow-strip,
   .admin-board,
+  .lawyer-list,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .results-head,
+  .admin-section-head {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .service-grid,
