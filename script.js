@@ -4,6 +4,10 @@ const nav = document.querySelector(".site-nav");
 const form = document.querySelector("#adminForm");
 const statusText = document.querySelector(".form-status");
 const portalForms = document.querySelectorAll(".portal-form");
+const loginModal = document.querySelector("#loginModal");
+const loginTriggers = document.querySelectorAll("[data-login-trigger]");
+const loginPanels = document.querySelectorAll("[data-login-panel]");
+const loginCloseButtons = document.querySelectorAll("[data-login-close]");
 
 function setHeaderState() {
   header.classList.toggle("is-scrolled", window.scrollY > 12);
@@ -21,6 +25,38 @@ nav.addEventListener("click", (event) => {
   if (event.target.closest("a")) {
     nav.classList.remove("is-open");
     navToggle.setAttribute("aria-expanded", "false");
+  }
+});
+
+function openLoginModal(panelName) {
+  loginPanels.forEach((panel) => {
+    panel.classList.toggle("is-active", panel.dataset.loginPanel === panelName);
+  });
+  loginModal.classList.add("is-open");
+  loginModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  loginModal.querySelector(".login-panel.is-active input").focus();
+}
+
+function closeLoginModal() {
+  loginModal.classList.remove("is-open");
+  loginModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+}
+
+loginTriggers.forEach((trigger) => {
+  trigger.addEventListener("click", () => {
+    openLoginModal(trigger.dataset.loginTrigger);
+  });
+});
+
+loginCloseButtons.forEach((button) => {
+  button.addEventListener("click", closeLoginModal);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && loginModal.classList.contains("is-open")) {
+    closeLoginModal();
   }
 });
 

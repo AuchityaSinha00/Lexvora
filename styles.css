@@ -350,19 +350,59 @@ h3 {
   background: #f4f1ea;
 }
 
-.portal-grid {
+.portal-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
 }
 
-.portal-panel {
-  scroll-margin-top: 96px;
+.portal-launch {
+  display: flex;
+  align-items: center;
+  gap: 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: clamp(22px, 4vw, 34px);
+  color: var(--ink);
   background: var(--panel);
   box-shadow: 0 8px 24px rgba(23, 33, 33, 0.06);
+  cursor: pointer;
+  text-align: left;
+}
+
+.portal-launch:hover {
+  border-color: rgba(15, 118, 110, 0.44);
+  box-shadow: var(--shadow);
+}
+
+.portal-launch > svg {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  padding: 12px;
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.admin-launch > svg {
+  background: var(--blue);
+}
+
+.portal-launch strong,
+.portal-launch small {
+  display: block;
+}
+
+.portal-launch strong {
+  margin-bottom: 5px;
+  font-size: 1.18rem;
+}
+
+.portal-launch small {
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .portal-head {
@@ -381,7 +421,7 @@ h3 {
   background: var(--primary);
 }
 
-.admin-panel .portal-head > svg {
+.login-panel[data-login-panel="admin"] .portal-head > svg {
   background: var(--blue);
 }
 
@@ -409,6 +449,71 @@ h3 {
   color: var(--muted);
   font-size: 0.92rem;
   line-height: 1.5;
+}
+
+.login-modal {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-modal.is-open {
+  display: flex;
+}
+
+.login-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 23, 23, 0.62);
+  backdrop-filter: blur(8px);
+}
+
+.login-dialog {
+  position: relative;
+  width: min(100%, 480px);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: clamp(22px, 4vw, 34px);
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgba(10, 23, 23, 0.28);
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.modal-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.login-panel {
+  display: none;
+}
+
+.login-panel.is-active {
+  display: block;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 .connect-section {
@@ -533,7 +638,7 @@ textarea:focus {
 
   .intro-section,
   .connect-section,
-  .portal-grid {
+  .portal-actions {
     grid-template-columns: 1fr;
   }
 

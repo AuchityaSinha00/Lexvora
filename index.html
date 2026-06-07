@@ -183,8 +183,32 @@
           <span class="section-kicker">Login Portals</span>
           <h2>Access your LexVora workspace</h2>
         </div>
-        <div class="portal-grid">
-          <article class="portal-panel" id="customer-login">
+        <div class="portal-actions">
+          <button class="portal-launch" type="button" data-login-trigger="customer">
+            <i data-lucide="user-round"></i>
+            <span>
+              <strong>Customer Login</strong>
+              <small>Open customer access</small>
+            </span>
+          </button>
+          <button class="portal-launch admin-launch" type="button" data-login-trigger="admin">
+            <i data-lucide="shield-lock"></i>
+            <span>
+              <strong>Admin Login</strong>
+              <small>Open admin access</small>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <div class="login-modal" id="loginModal" aria-hidden="true">
+        <div class="login-backdrop" data-login-close></div>
+        <div class="login-dialog" role="dialog" aria-modal="true" aria-label="Login popup">
+          <button class="modal-close" type="button" aria-label="Close login popup" data-login-close>
+            <i data-lucide="x"></i>
+          </button>
+
+          <article class="login-panel is-active" data-login-panel="customer">
             <div class="portal-head">
               <i data-lucide="user-round"></i>
               <div>
@@ -209,7 +233,7 @@
             </form>
           </article>
 
-          <article class="portal-panel admin-panel" id="admin-login">
+          <article class="login-panel" data-login-panel="admin">
             <div class="portal-head">
               <i data-lucide="shield-lock"></i>
               <div>
@@ -234,7 +258,7 @@
             </form>
           </article>
         </div>
-      </section>
+      </div>
 
       <section class="connect-section" id="connect">
         <div class="connect-copy">
