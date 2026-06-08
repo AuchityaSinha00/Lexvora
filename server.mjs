@@ -55,6 +55,29 @@ function sendJson(response, status, payload) {
   response.end(JSON.stringify(payload));
 }
 
+function requireFields(payload, fields, label) {
+  const missing = fields.filter((field) => {
+    const value = payload?.[field];
+    return value === undefined || value === null || String(value).trim() === "";
+  });
+
+  if (missing.length) {
+    throw new Error(`${label} missing required field(s): ${missing.join(", ")}`);
+  }
+}
+
+function assertRole(role) {
+  if (!["customer", "admin"].includes(role)) {
+    throw new Error("Invalid role. Use customer or admin.");
+  }
+}
+
+function assertEmail(email) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ""))) {
+    throw new Error("A valid email address is required.");
+  }
+}
+
 function readBody(request) {
   return new Promise((resolve, reject) => {
     let raw = "";
@@ -114,6 +137,9 @@ async function handleApi(request, response, url) {
 
   if (request.method === "POST" && url.pathname === "/api/login") {
     const body = await readBody(request);
+    requireFields(body, ["role", "email", "password"], "Login");
+    assertRole(body.role);
+    assertEmail(body.email);
     const user = users[body.role];
 
     if (!user || body.email !== user.email || body.password !== user.password) {
@@ -132,12 +158,14 @@ async function handleApi(request, response, url) {
 
   if (request.method === "GET" && url.pathname.startsWith("/api/navigation/")) {
     const role = url.pathname.split("/").at(-1);
+    assertRole(role);
     sendJson(response, 200, { tabs: roleNavigation[role] || [] });
     return;
   }
 
   if (request.method === "GET" && url.pathname.startsWith("/api/profile-questions/")) {
     const role = url.pathname.split("/").at(-1);
+    assertRole(role);
     sendJson(response, 200, { questions: profileQuestions[role] || [] });
     return;
   }
@@ -145,6 +173,8 @@ async function handleApi(request, response, url) {
   if (request.method === "GET" && url.pathname.startsWith("/api/profiles/")) {
     const role = url.pathname.split("/").at(-1);
     const email = url.searchParams.get("email") || "";
+    assertRole(role);
+    assertEmail(email);
     const profile = await repository.getProfile(role, email);
     sendJson(response, 200, { profile });
     return;
@@ -153,6 +183,12 @@ async function handleApi(request, response, url) {
   if (request.method === "POST" && url.pathname.startsWith("/api/profiles/")) {
     const role = url.pathname.split("/").at(-1);
     const body = await readBody(request);
+    assertRole(role);
+    assertEmail(body.email);
+    const requiredProfileFields = (profileQuestions[role] || [])
+      .filter((question) => question.required)
+      .map((question) => question.name);
+    requireFields(body.profile, requiredProfileFields, "Profile");
     const profile = await repository.upsertProfile(role, body.email, body.profile);
     sendJson(response, 200, { profile });
     return;
@@ -166,6 +202,12 @@ async function handleApi(request, response, url) {
 
   if (request.method === "POST" && url.pathname === "/api/lawyers") {
     const body = await readBody(request);
+    requireFields(
+      body,
+      ["name", "phone", "email", "specialization", "city", "court", "experience", "mode", "summary"],
+      "Lawyer profile"
+    );
+    assertEmail(body.email);
     const lawyer = await repository.createLawyer({
       name: body.name,
       phone: body.phone,
@@ -200,6 +242,16 @@ async function handleApi(request, response, url) {
 
   if (request.method === "POST" && url.pathname === "/api/requests") {
     const body = await readBody(request);
+    if (!Array.isArray(body.lawyerIds) || body.lawyerIds.length === 0) {
+      throw new Error("Select at least one lawyer before requesting consultation.");
+    }
+    requireFields(
+      body.enquiry,
+      ["customerName", "customerPhone", "customerEmail", "legalIssue"],
+      "Consultation enquiry"
+    );
+    assertEmail(body.enquiry.customerEmail);
+    requireFields(body.payment, ["gateway", "paymentOption", "paymentReference"], "Payment");
     const createdRequests = await repository.createConsultationRequests({
       lawyerIds: body.lawyerIds || [],
       enquiry: body.enquiry,
@@ -243,6 +295,8 @@ async function handleApi(request, response, url) {
 
   if (request.method === "POST" && url.pathname === "/api/contact") {
     const body = await readBody(request);
+    requireFields(body, ["name", "email", "topic", "message"], "Contact request");
+    assertEmail(body.email);
     sendJson(response, 200, {
       message: "Contact request captured in mock API.",
       mailTo: supportEmail,

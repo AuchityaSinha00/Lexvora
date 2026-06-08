@@ -485,6 +485,90 @@ h3 {
   line-height: 1.5;
 }
 
+.form-status[data-status="success"],
+.portal-status[data-status="success"] {
+  color: #137a36;
+}
+
+.form-status[data-status="error"],
+.portal-status[data-status="error"],
+.error-state {
+  color: #b42318;
+}
+
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tooltip-trigger {
+  position: relative;
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--primary);
+  background: #ffffff;
+  cursor: help;
+}
+
+.tooltip-trigger svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tooltip-trigger::after {
+  position: absolute;
+  z-index: 5;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  width: max-content;
+  max-width: 220px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #172121;
+  box-shadow: 0 10px 26px rgba(23, 33, 33, 0.2);
+  content: attr(data-tooltip);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.tooltip-trigger:hover::after,
+.tooltip-trigger:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.field-error {
+  display: block;
+  margin-top: 7px;
+  color: #b42318;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+input.has-error,
+select.has-error,
+textarea.has-error {
+  border-color: #d92d20;
+  box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.14);
+}
+
+button.is-busy {
+  cursor: wait;
+  opacity: 0.76;
+}
+
 .login-modal {
   position: fixed;
   z-index: 50;

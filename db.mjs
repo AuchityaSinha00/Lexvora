@@ -119,6 +119,10 @@ class MemoryRepository {
 
   async createConsultationRequests({ lawyerIds, enquiry, payment }) {
     const selectedLawyers = this.lawyers.filter((lawyer) => lawyerIds?.includes(lawyer.id));
+    if (selectedLawyers.length !== lawyerIds.length) {
+      throw new Error("One or more selected lawyer profiles could not be found.");
+    }
+
     const createdAt = new Date();
     const createdRequests = selectedLawyers.map((lawyer) => ({
       id: createId("request"),
@@ -280,6 +284,10 @@ class PostgresRepository {
         `select id, name, phone from lawyers where id = any($1::text[])`,
         [lawyerIds || []]
       );
+      if (lawyersResult.rows.length !== lawyerIds.length) {
+        throw new Error("One or more selected lawyer profiles could not be found.");
+      }
+
       const created = [];
 
       for (const lawyer of lawyersResult.rows) {

@@ -188,14 +188,14 @@
           <h2>Access your LexVora workspace</h2>
         </div>
         <div class="portal-actions">
-          <button class="portal-launch" type="button" data-login-trigger="customer">
+          <button class="portal-launch" type="button" data-login-trigger="customer" title="Open the customer login popup">
             <i data-lucide="user-round"></i>
             <span>
               <strong>Customer Login</strong>
               <small>Open customer access</small>
             </span>
           </button>
-          <button class="portal-launch admin-launch" type="button" data-login-trigger="admin">
+          <button class="portal-launch admin-launch" type="button" data-login-trigger="admin" title="Open the admin login popup">
             <i data-lucide="shield-lock"></i>
             <span>
               <strong>Admin Login</strong>
@@ -223,11 +223,11 @@
             <form class="portal-form" data-portal="Customer">
               <label>
                 Email address
-                <input type="email" name="email" autocomplete="email" required />
+                <input type="email" name="email" autocomplete="email" title="Use the demo customer email address." required />
               </label>
               <label>
                 Password
-                <input type="password" name="password" autocomplete="current-password" required />
+                <input type="password" name="password" autocomplete="current-password" title="Use the demo customer password." required />
               </label>
               <button class="button primary" type="submit">
                 <i data-lucide="log-in"></i>
@@ -248,11 +248,11 @@
             <form class="portal-form" data-portal="Admin">
               <label>
                 Admin email
-                <input type="email" name="email" autocomplete="email" required />
+                <input type="email" name="email" autocomplete="email" title="Use the demo admin email address." required />
               </label>
               <label>
                 Password
-                <input type="password" name="password" autocomplete="current-password" required />
+                <input type="password" name="password" autocomplete="current-password" title="Use the demo admin password." required />
               </label>
               <button class="button primary" type="submit">
                 <i data-lucide="key-round"></i>
@@ -287,15 +287,15 @@
         <form class="contact-form" id="adminForm">
           <label>
             Full name
-            <input type="text" name="name" autocomplete="name" required />
+            <input type="text" name="name" autocomplete="name" title="Enter the name the admin team should use in replies." required />
           </label>
           <label>
             Email address
-            <input type="email" name="email" autocomplete="email" required />
+            <input type="email" name="email" autocomplete="email" title="Enter a valid email address for follow-up." required />
           </label>
           <label>
             Guidance topic
-            <select name="topic" required>
+            <select name="topic" title="Choose the closest topic for faster routing." required>
               <option value="">Select a topic</option>
               <option>Professional guidance</option>
               <option>Content or document support</option>
@@ -305,7 +305,7 @@
           </label>
           <label>
             Message
-            <textarea name="message" rows="5" required></textarea>
+            <textarea name="message" rows="5" title="Share enough detail for the admin team to understand the request." required></textarea>
           </label>
           <button class="button primary form-submit" type="submit">
             <i data-lucide="send"></i>
@@ -354,7 +354,7 @@
         <div class="form-grid">
           <label>
             Specialization
-            <select name="specialization" required>
+            <select name="specialization" title="Select the legal area that best matches your need." required>
               <option value="">Select specialization</option>
               <option>Family Law</option>
               <option>Criminal Law</option>
@@ -365,11 +365,11 @@
           </label>
           <label>
             City
-            <input type="text" name="city" placeholder="Example: Delhi" required />
+            <input type="text" name="city" placeholder="Example: Delhi" title="Enter the city where you prefer legal support." required />
           </label>
           <label>
             Court name
-            <input type="text" name="court" placeholder="Example: Delhi High Court" />
+            <input type="text" name="court" placeholder="Example: Delhi High Court" title="Optional: enter a specific court to narrow the search." />
           </label>
         </div>
 
@@ -380,19 +380,19 @@
         <div class="form-grid">
           <label>
             Full name
-            <input type="text" name="clientName" autocomplete="name" required />
+            <input type="text" name="clientName" autocomplete="name" title="This name is shared with selected lawyers after payment." required />
           </label>
           <label>
             Phone number
-            <input type="tel" name="phone" autocomplete="tel" required />
+            <input type="tel" name="phone" autocomplete="tel" title="This phone number is used for SMS and lawyer follow-up." required />
           </label>
           <label>
             Email address
-            <input type="email" name="clientEmail" autocomplete="email" required />
+            <input type="email" name="clientEmail" autocomplete="email" title="Enter a valid email for request records." required />
           </label>
           <label>
             Preferred contact method
-            <select name="contactMethod" required>
+            <select name="contactMethod" title="Choose how you prefer the lawyer to contact you." required>
               <option value="">Select method</option>
               <option>Phone call</option>
               <option>WhatsApp</option>
@@ -407,6 +407,7 @@
             name="legalIssue"
             rows="5"
             placeholder="Briefly describe your legal issue and any urgency."
+            title="Briefly describe the legal issue and any urgency."
             required
           ></textarea>
         </label>
@@ -423,7 +424,7 @@
             <span class="section-kicker">Available Lawyers</span>
             <h2>Matching lawyer profiles</h2>
           </div>
-          <button class="button primary" type="button" id="requestConsultationButton" disabled>
+          <button class="button primary" type="button" id="requestConsultationButton" title="Select one or more lawyers before requesting consultation." disabled>
             <i data-lucide="credit-card"></i>
             Request Consultation
           </button>
@@ -448,7 +449,7 @@
           <form class="payment-form" id="paymentForm">
             <label>
               Payment option
-              <select name="paymentOption" required>
+              <select name="paymentOption" title="Choose the demo payment method." required>
                 <option value="">Select payment option</option>
                 <option>UPI</option>
                 <option>Credit Card</option>
@@ -459,7 +460,7 @@
             </label>
             <label>
               Payment gateway
-              <select name="gateway" required>
+              <select name="gateway" title="Choose the payment gateway to simulate." required>
                 <option value="">Select gateway</option>
                 <option>Razorpay</option>
                 <option>PayU</option>
@@ -469,7 +470,7 @@
             </label>
             <label>
               Payment reference
-              <input type="text" name="paymentReference" placeholder="Demo reference or UPI ID" required />
+              <input type="text" name="paymentReference" placeholder="Demo reference or UPI ID" title="Enter any demo payment reference for this mock flow." required />
             </label>
             <button class="button primary form-submit" type="submit">
               <i data-lucide="badge-indian-rupee"></i>
@@ -502,19 +503,19 @@
         <div class="form-grid">
           <label>
             Lawyer name
-            <input type="text" name="name" placeholder="Example: Adv. Riya Sharma" required />
+            <input type="text" name="name" placeholder="Example: Adv. Riya Sharma" title="Enter the lawyer name shown to customers." required />
           </label>
           <label>
             Phone number
-            <input type="tel" name="phone" placeholder="Example: 9876543210" required />
+            <input type="tel" name="phone" placeholder="Example: 9876543210" title="This number is shared with customers after approval." required />
           </label>
           <label>
             Email address
-            <input type="email" name="email" placeholder="lawyer@example.com" required />
+            <input type="email" name="email" placeholder="lawyer@example.com" title="Enter the lawyer email for admin records." required />
           </label>
           <label>
             Specialization
-            <select name="specialization" required>
+            <select name="specialization" title="Choose the lawyer specialization used for customer filters." required>
               <option value="">Select specialization</option>
               <option>Family Law</option>
               <option>Criminal Law</option>
@@ -525,19 +526,19 @@
           </label>
           <label>
             City
-            <input type="text" name="city" placeholder="Example: Delhi" required />
+            <input type="text" name="city" placeholder="Example: Delhi" title="Enter the city used for customer search filters." required />
           </label>
           <label>
             Court name
-            <input type="text" name="court" placeholder="Example: Delhi High Court" required />
+            <input type="text" name="court" placeholder="Example: Delhi High Court" title="Enter the main court used for customer search filters." required />
           </label>
           <label>
             Experience
-            <input type="text" name="experience" placeholder="Example: 8 years" required />
+            <input type="text" name="experience" placeholder="Example: 8 years" title="Enter a short experience label." required />
           </label>
           <label>
             Consultation mode
-            <select name="mode" required>
+            <select name="mode" title="Choose the consultation modes this lawyer supports." required>
               <option value="">Select mode</option>
               <option>Phone</option>
               <option>Video Call</option>
@@ -548,7 +549,7 @@
         </div>
         <label>
           Profile summary
-          <textarea name="summary" rows="4" placeholder="Short profile shown to customers." required></textarea>
+          <textarea name="summary" rows="4" placeholder="Short profile shown to customers." title="Write a short public summary for customers." required></textarea>
         </label>
         <button class="button primary form-submit" type="submit">
           <i data-lucide="user-plus"></i>

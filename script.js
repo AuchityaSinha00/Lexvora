@@ -32,17 +32,24 @@ let currentUser = null;
 let currentProfileQuestions = [];
 
 async function api(path, options = {}) {
-  const response = await fetch(path, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
-  const payload = await response.json();
+  let response;
+  try {
+    response = await fetch(path, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+      ...options,
+    });
+  } catch {
+    throw new Error("Network error. Check whether the LexVora server is running and try again.");
+  }
+
+  const isJson = response.headers.get("content-type")?.includes("application/json");
+  const payload = isJson ? await response.json() : { error: await response.text() };
 
   if (!response.ok) {
-    throw new Error(payload.error || "API request failed");
+    throw new Error(payload.error || `API request failed with status ${response.status}`);
   }
 
   return payload;
@@ -61,6 +68,101 @@ function refreshIcons() {
   if (window.lucide) {
     window.lucide.createIcons();
   }
+}
+
+function setStatus(element, message, type = "info") {
+  if (!element) return;
+  element.textContent = message;
+  element.dataset.status = type;
+}
+
+function setButtonBusy(button, isBusy, busyText = "Please wait") {
+  if (!button) return;
+  if (isBusy) {
+    button.dataset.originalHtml = button.innerHTML;
+    button.disabled = true;
+    button.classList.add("is-busy");
+    button.setAttribute("aria-busy", "true");
+    button.textContent = busyText;
+    return;
+  }
+
+  button.disabled = false;
+  button.classList.remove("is-busy");
+  button.removeAttribute("aria-busy");
+  if (button.dataset.originalHtml) {
+    button.innerHTML = button.dataset.originalHtml;
+    delete button.dataset.originalHtml;
+    refreshIcons();
+  }
+}
+
+function clearFormErrors(formElement) {
+  formElement.querySelectorAll(".field-error").forEach((error) => error.remove());
+  formElement.querySelectorAll(".has-error").forEach((field) => field.classList.remove("has-error"));
+  formElement.querySelectorAll("[aria-invalid='true']").forEach((field) => field.removeAttribute("aria-invalid"));
+}
+
+function addFieldError(field, message) {
+  if (!field) return;
+  const label = field.closest("label") || field.parentElement;
+  const error = document.createElement("small");
+  error.className = "field-error";
+  error.textContent = message;
+  field.classList.add("has-error");
+  field.setAttribute("aria-invalid", "true");
+  label.append(error);
+}
+
+function validateForm(formElement, rules = {}) {
+  clearFormErrors(formElement);
+  const fields = [...formElement.querySelectorAll("input, select, textarea")];
+  let firstInvalidField = null;
+
+  fields.forEach((field) => {
+    const value = field.value.trim();
+    const label =
+      field.closest("label")?.querySelector(".field-label")?.textContent?.trim() ||
+      field.closest("label")?.childNodes[0]?.textContent?.trim() ||
+      field.name;
+    const rule = rules[field.name] || {};
+
+    if (field.required && !value) {
+      addFieldError(field, `${label} is required.`);
+      firstInvalidField ||= field;
+      return;
+    }
+
+    if (value && field.type === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      addFieldError(field, "Enter a valid email address.");
+      firstInvalidField ||= field;
+      return;
+    }
+
+    if (value && field.type === "tel" && !/^[0-9+\-\s()]{8,16}$/.test(value)) {
+      addFieldError(field, "Enter a valid phone number.");
+      firstInvalidField ||= field;
+      return;
+    }
+
+    if (value && rule.minLength && value.length < rule.minLength) {
+      addFieldError(field, `${label} must be at least ${rule.minLength} characters.`);
+      firstInvalidField ||= field;
+    }
+  });
+
+  if (firstInvalidField) {
+    firstInvalidField.focus();
+    return false;
+  }
+
+  return true;
+}
+
+function tooltip(text) {
+  return `<button class="tooltip-trigger" type="button" tabindex="-1" aria-label="${escapeHtml(text)}" title="${escapeHtml(text)}" data-tooltip="${escapeHtml(text)}">
+    <i data-lucide="circle-help"></i>
+  </button>`;
 }
 
 function setHeaderState() {
@@ -139,11 +241,13 @@ function closeProfileModal() {
 
 function renderProfileQuestion(question) {
   const required = question.required ? "required" : "";
+  const hint = `Used to create your ${question.name === "bio" ? "profile summary" : "LexVora profile"}.`;
+  const labelText = `<span class="field-label">${escapeHtml(question.label)} ${tooltip(hint)}</span>`;
 
   if (question.type === "select") {
     return `
       <label>
-        ${escapeHtml(question.label)}
+        ${labelText}
         <select name="${escapeHtml(question.name)}" ${required}>
           <option value="">Select</option>
           ${question.options.map((option) => `<option>${escapeHtml(option)}</option>`).join("")}
@@ -155,7 +259,7 @@ function renderProfileQuestion(question) {
   if (question.type === "textarea") {
     return `
       <label>
-        ${escapeHtml(question.label)}
+        ${labelText}
         <textarea name="${escapeHtml(question.name)}" rows="4" ${required}></textarea>
       </label>
     `;
@@ -163,7 +267,7 @@ function renderProfileQuestion(question) {
 
   return `
     <label>
-      ${escapeHtml(question.label)}
+      ${labelText}
       <input type="${escapeHtml(question.type)}" name="${escapeHtml(question.name)}" ${required} />
     </label>
   `;
@@ -210,11 +314,23 @@ function renderSidePanel(role, profile, tabs) {
 }
 
 async function loadProfileShell(role) {
-  const [{ tabs }, { questions }, { profile }] = await Promise.all([
-    api(`/api/navigation/${role}`),
-    api(`/api/profile-questions/${role}`),
-    api(`/api/profiles/${role}?email=${encodeURIComponent(currentUser.email)}`),
-  ]);
+  let tabs = [];
+  let questions = [];
+  let profile = null;
+
+  try {
+    [{ tabs }, { questions }, { profile }] = await Promise.all([
+      api(`/api/navigation/${role}`),
+      api(`/api/profile-questions/${role}`),
+      api(`/api/profiles/${role}?email=${encodeURIComponent(currentUser.email)}`),
+    ]);
+  } catch (error) {
+    const panel = [...sidePanels].find((item) => item.dataset.sidePanel === role);
+    if (panel) {
+      panel.innerHTML = `<p class="empty-state error-state">${escapeHtml(error.message)}</p>`;
+    }
+    throw error;
+  }
 
   if (!profile) {
     renderSidePanel(role, { fullName: "Profile pending", bio: "Complete setup to continue." }, tabs);
@@ -232,10 +348,14 @@ async function showRoleHome(role) {
   window.location.hash = role === "admin" ? "admin-home" : "customer-home";
   window.scrollTo({ top: 0, behavior: "smooth" });
 
-  if (role === "admin") {
-    await renderAdminData();
+  try {
+    if (role === "admin") {
+      await renderAdminData();
+    }
+    await loadProfileShell(role);
+  } catch (error) {
+    alert(error.message);
   }
-  await loadProfileShell(role);
 }
 
 function logout() {
@@ -289,7 +409,13 @@ async function renderAdminData() {
 }
 
 async function renderAdminLawyers() {
-  const { lawyers } = await api("/api/lawyers");
+  let lawyers = [];
+  try {
+    ({ lawyers } = await api("/api/lawyers"));
+  } catch (error) {
+    adminLawyerList.innerHTML = `<p class="empty-state error-state">${escapeHtml(error.message)}</p>`;
+    return;
+  }
 
   if (!lawyers.length) {
     adminLawyerList.innerHTML = '<p class="empty-state">No lawyer profiles added yet.</p>';
@@ -315,7 +441,13 @@ async function renderAdminLawyers() {
 }
 
 async function renderAdminRequests() {
-  const { requests } = await api("/api/requests");
+  let requests = [];
+  try {
+    ({ requests } = await api("/api/requests"));
+  } catch (error) {
+    adminRequestList.innerHTML = `<p class="empty-state error-state">${escapeHtml(error.message)}</p>`;
+    return;
+  }
 
   if (!requests.length) {
     adminRequestList.innerHTML =
@@ -388,6 +520,10 @@ logoutButtons.forEach((button) => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!validateForm(form, { message: { minLength: 10 } })) {
+    setStatus(statusText, "Please fix the highlighted fields.", "error");
+    return;
+  }
 
   const data = new FormData(form);
   const contactRequest = {
@@ -398,18 +534,23 @@ form.addEventListener("submit", async (event) => {
   };
 
   if (!contactRequest.name || !contactRequest.email || !contactRequest.topic || !contactRequest.message) {
-    statusText.textContent = "Please complete every field before sending.";
+    setStatus(statusText, "Please complete every field before sending.", "error");
     return;
   }
 
+  const submitButton = form.querySelector("[type='submit']");
   try {
+    setButtonBusy(submitButton, true, "Sending");
     await api("/api/contact", {
       method: "POST",
       body: JSON.stringify(contactRequest),
     });
-    statusText.textContent = "Contact request captured by mock API.";
+    setStatus(statusText, "Contact request captured by mock API.", "success");
+    form.reset();
   } catch (error) {
-    statusText.textContent = error.message;
+    setStatus(statusText, error.message, "error");
+  } finally {
+    setButtonBusy(submitButton, false);
   }
 });
 
@@ -423,16 +564,25 @@ portalForms.forEach((portalForm) => {
     const email = portalForm.elements.email.value.trim();
     const password = portalForm.elements.password.value;
 
+    if (!validateForm(portalForm)) {
+      setStatus(portalStatus, "Enter a valid email and password.", "error");
+      return;
+    }
+
+    const submitButton = portalForm.querySelector("[type='submit']");
     try {
+      setButtonBusy(submitButton, true, "Logging in");
       const { user } = await api("/api/login", {
         method: "POST",
         body: JSON.stringify({ role, email, password }),
       });
       currentUser = user;
-      portalStatus.textContent = "Login successful. Opening your home page.";
+      setStatus(portalStatus, "Login successful. Opening your home page.", "success");
       await showRoleHome(user.role);
     } catch (error) {
-      portalStatus.textContent = error.message;
+      setStatus(portalStatus, error.message, "error");
+    } finally {
+      setButtonBusy(submitButton, false);
     }
   });
 });
@@ -440,12 +590,19 @@ portalForms.forEach((portalForm) => {
 profileForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const profileStatus = profileForm.querySelector("#profileStatus");
+  if (!validateForm(profileForm, { bio: { minLength: 20 } })) {
+    setStatus(profileStatus, "Please complete the highlighted profile fields.", "error");
+    return;
+  }
+
   const data = new FormData(profileForm);
   const profile = Object.fromEntries(
     currentProfileQuestions.map((question) => [question.name, data.get(question.name)?.trim() || ""])
   );
 
+  const submitButton = profileForm.querySelector("[type='submit']");
   try {
+    setButtonBusy(submitButton, true, "Saving");
     const result = await api(`/api/profiles/${currentUser.role}`, {
       method: "POST",
       body: JSON.stringify({
@@ -455,15 +612,22 @@ profileForm.addEventListener("submit", async (event) => {
     });
     const { tabs } = await api(`/api/navigation/${currentUser.role}`);
     renderSidePanel(currentUser.role, result.profile, tabs);
-    profileStatus.textContent = "Profile saved.";
+    setStatus(profileStatus, "Profile saved.", "success");
     closeProfileModal();
   } catch (error) {
-    profileStatus.textContent = error.message;
+    setStatus(profileStatus, error.message, "error");
+  } finally {
+    setButtonBusy(submitButton, false);
   }
 });
 
 lawyerEnquiryForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!validateForm(lawyerEnquiryForm, { legalIssue: { minLength: 20 } })) {
+    setStatus(caseFormStatus, "Please fix the highlighted enquiry fields.", "error");
+    return;
+  }
+
   const data = new FormData(lawyerEnquiryForm);
   latestCustomerEnquiry = {
     specialization: data.get("specialization"),
@@ -485,10 +649,14 @@ lawyerEnquiryForm.addEventListener("submit", async (event) => {
   try {
     const { lawyers } = await api(`/api/lawyers/search?${params.toString()}`);
     renderLawyerResults(lawyers);
-    caseFormStatus.textContent = `${lawyers.length} lawyer profile(s) found. Select one or many lawyers to request consultation.`;
+    setStatus(
+      caseFormStatus,
+      `${lawyers.length} lawyer profile(s) found. Select one or many lawyers to request consultation.`,
+      lawyers.length ? "success" : "info"
+    );
     refreshIcons();
   } catch (error) {
-    caseFormStatus.textContent = error.message;
+    setStatus(caseFormStatus, error.message, "error");
   }
 });
 
@@ -510,20 +678,27 @@ lawyerResults.addEventListener("change", (event) => {
 
 requestConsultationButton.addEventListener("click", () => {
   if (!latestCustomerEnquiry || selectedLawyerIds.size === 0) {
-    caseFormStatus.textContent = "Search and select at least one lawyer first.";
+    setStatus(caseFormStatus, "Search and select at least one lawyer first.", "error");
     return;
   }
 
-  paymentStatus.textContent = "";
+  setStatus(paymentStatus, "", "info");
   paymentForm.reset();
   openPaymentModal();
 });
 
 paymentForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!validateForm(paymentForm)) {
+    setStatus(paymentStatus, "Please complete all payment details.", "error");
+    return;
+  }
+
   const paymentData = new FormData(paymentForm);
 
+  const submitButton = paymentForm.querySelector("[type='submit']");
   try {
+    setButtonBusy(submitButton, true, "Processing");
     const { requests } = await api("/api/requests", {
       method: "POST",
       body: JSON.stringify({
@@ -537,8 +712,12 @@ paymentForm.addEventListener("submit", async (event) => {
       }),
     });
 
-    paymentStatus.textContent = "Payment captured in demo mode. Request sent to admin for approval.";
-    caseFormStatus.textContent = `${requests.length} paid request(s) sent to admin. You will receive lawyer details by SMS after approval.`;
+    setStatus(paymentStatus, "Payment captured in demo mode. Request sent to admin for approval.", "success");
+    setStatus(
+      caseFormStatus,
+      `${requests.length} paid request(s) sent to admin. You will receive lawyer details by SMS after approval.`,
+      "success"
+    );
     selectedLawyerIds = new Set();
     requestConsultationButton.disabled = true;
     paymentForm.reset();
@@ -546,12 +725,19 @@ paymentForm.addEventListener("submit", async (event) => {
     await renderAdminRequests();
     setTimeout(closePaymentModal, 900);
   } catch (error) {
-    paymentStatus.textContent = error.message;
+    setStatus(paymentStatus, error.message, "error");
+  } finally {
+    setButtonBusy(submitButton, false);
   }
 });
 
 lawyerProfileForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!validateForm(lawyerProfileForm, { summary: { minLength: 20 } })) {
+    setStatus(lawyerProfileStatus, "Please fix the highlighted lawyer profile fields.", "error");
+    return;
+  }
+
   const data = new FormData(lawyerProfileForm);
   const lawyer = {
     name: data.get("name").trim(),
@@ -565,17 +751,21 @@ lawyerProfileForm.addEventListener("submit", async (event) => {
     summary: data.get("summary").trim(),
   };
 
+  const submitButton = lawyerProfileForm.querySelector("[type='submit']");
   try {
+    setButtonBusy(submitButton, true, "Adding");
     await api("/api/lawyers", {
       method: "POST",
       body: JSON.stringify(lawyer),
     });
-    lawyerProfileStatus.textContent = "Lawyer profile added through mock API.";
+    setStatus(lawyerProfileStatus, "Lawyer profile added through mock API.", "success");
     lawyerProfileForm.reset();
     await renderAdminLawyers();
     refreshIcons();
   } catch (error) {
-    lawyerProfileStatus.textContent = error.message;
+    setStatus(lawyerProfileStatus, error.message, "error");
+  } finally {
+    setButtonBusy(submitButton, false);
   }
 });
 
@@ -584,12 +774,15 @@ adminRequestList.addEventListener("click", async (event) => {
   if (!actionButton) return;
 
   try {
+    actionButton.disabled = true;
     await api(`/api/requests/${actionButton.dataset.requestId}/${actionButton.dataset.requestAction}`, {
       method: "POST",
     });
     await renderAdminRequests();
   } catch (error) {
     adminRequestList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
+  } finally {
+    actionButton.disabled = false;
   }
 });
 
