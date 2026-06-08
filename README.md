@@ -14,6 +14,15 @@ Then open:
 http://localhost:8080
 ```
 
+Windows/Codex local helper:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\check.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\start.ps1
+```
+
+These helpers avoid the WindowsApps-packaged `node.exe`, which may return `Access is denied` from sandboxed shells.
+
 Run a specific environment:
 
 ```bash
