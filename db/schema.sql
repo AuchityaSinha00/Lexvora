@@ -45,3 +45,14 @@ create table if not exists consultation_requests (
 create index if not exists consultation_requests_status_idx on consultation_requests (status);
 create index if not exists consultation_requests_lawyer_idx on consultation_requests (lawyer_id);
 create index if not exists consultation_requests_created_at_idx on consultation_requests (created_at desc);
+
+create table if not exists user_profiles (
+  role text not null,
+  email text not null,
+  profile_data jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (role, email)
+);
+
+create index if not exists user_profiles_role_idx on user_profiles (role);

@@ -21,9 +21,15 @@ const lawyerProfileForm = document.querySelector("#lawyerProfileForm");
 const lawyerProfileStatus = document.querySelector("#lawyerProfileStatus");
 const adminLawyerList = document.querySelector("#adminLawyerList");
 const adminRequestList = document.querySelector("#adminRequestList");
+const sidePanels = document.querySelectorAll("[data-side-panel]");
+const profileModal = document.querySelector("#profileModal");
+const profileForm = document.querySelector("#profileForm");
+const profileModalTitle = document.querySelector("#profileModalTitle");
 
 let selectedLawyerIds = new Set();
 let latestCustomerEnquiry = null;
+let currentUser = null;
+let currentProfileQuestions = [];
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -105,6 +111,120 @@ function closePaymentModal() {
   document.body.classList.remove("modal-open");
 }
 
+function openProfileModal(role, questions) {
+  currentProfileQuestions = questions;
+  profileModalTitle.textContent = role === "admin" ? "Create admin profile" : "Create customer profile";
+  profileForm.innerHTML = `
+    <div class="profile-grid">
+      ${questions.map(renderProfileQuestion).join("")}
+    </div>
+    <button class="button primary form-submit" type="submit">
+      <i data-lucide="save"></i>
+      Save Profile
+    </button>
+    <p class="form-status" id="profileStatus" role="status" aria-live="polite"></p>
+  `;
+  profileModal.classList.add("is-open");
+  profileModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  profileForm.querySelector("input, select, textarea").focus();
+  refreshIcons();
+}
+
+function closeProfileModal() {
+  profileModal.classList.remove("is-open");
+  profileModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+}
+
+function renderProfileQuestion(question) {
+  const required = question.required ? "required" : "";
+
+  if (question.type === "select") {
+    return `
+      <label>
+        ${escapeHtml(question.label)}
+        <select name="${escapeHtml(question.name)}" ${required}>
+          <option value="">Select</option>
+          ${question.options.map((option) => `<option>${escapeHtml(option)}</option>`).join("")}
+        </select>
+      </label>
+    `;
+  }
+
+  if (question.type === "textarea") {
+    return `
+      <label>
+        ${escapeHtml(question.label)}
+        <textarea name="${escapeHtml(question.name)}" rows="4" ${required}></textarea>
+      </label>
+    `;
+  }
+
+  return `
+    <label>
+      ${escapeHtml(question.label)}
+      <input type="${escapeHtml(question.type)}" name="${escapeHtml(question.name)}" ${required} />
+    </label>
+  `;
+}
+
+function renderSidePanel(role, profile, tabs) {
+  const panel = [...sidePanels].find((item) => item.dataset.sidePanel === role);
+  if (!panel) return;
+
+  const initials = (profile.fullName || currentUser.email || "LV")
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  panel.innerHTML = `
+    <div class="side-profile">
+      <span class="side-avatar">${escapeHtml(initials)}</span>
+      <div>
+        <h3>${escapeHtml(profile.fullName || "Profile")}</h3>
+        <p>${escapeHtml(currentUser.email)}</p>
+      </div>
+    </div>
+    <nav class="side-tabs" aria-label="${escapeHtml(role)} dashboard tabs">
+      ${tabs
+        .map(
+          (tab, index) => `
+            <button class="side-tab ${index === 0 ? "is-active" : ""}" type="button" data-dashboard-tab="${escapeHtml(tab.id)}">
+              <i data-lucide="${escapeHtml(tab.icon)}"></i>
+              ${escapeHtml(tab.label)}
+            </button>
+          `
+        )
+        .join("")}
+    </nav>
+    <dl class="side-detail">
+      <div><dt>Phone</dt><dd>${escapeHtml(profile.phone || "Not set")}</dd></div>
+      <div><dt>City</dt><dd>${escapeHtml(profile.city || "Not set")}</dd></div>
+      <div><dt>Bio</dt><dd>${escapeHtml(profile.bio || "Not set")}</dd></div>
+    </dl>
+  `;
+  refreshIcons();
+}
+
+async function loadProfileShell(role) {
+  const [{ tabs }, { questions }, { profile }] = await Promise.all([
+    api(`/api/navigation/${role}`),
+    api(`/api/profile-questions/${role}`),
+    api(`/api/profiles/${role}?email=${encodeURIComponent(currentUser.email)}`),
+  ]);
+
+  if (!profile) {
+    renderSidePanel(role, { fullName: "Profile pending", bio: "Complete setup to continue." }, tabs);
+    openProfileModal(role, questions);
+    return;
+  }
+
+  renderSidePanel(role, profile, tabs);
+}
+
 async function showRoleHome(role) {
   document.body.classList.add("is-authenticated");
   document.body.dataset.role = role;
@@ -115,11 +235,13 @@ async function showRoleHome(role) {
   if (role === "admin") {
     await renderAdminData();
   }
+  await loadProfileShell(role);
 }
 
 function logout() {
   document.body.classList.remove("is-authenticated");
   delete document.body.dataset.role;
+  currentUser = null;
   portalForms.forEach((portalForm) => portalForm.reset());
   window.location.hash = "home";
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -256,6 +378,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     if (loginModal.classList.contains("is-open")) closeLoginModal();
     if (paymentModal.classList.contains("is-open")) closePaymentModal();
+    if (profileModal.classList.contains("is-open")) event.preventDefault();
   }
 });
 
@@ -305,12 +428,38 @@ portalForms.forEach((portalForm) => {
         method: "POST",
         body: JSON.stringify({ role, email, password }),
       });
+      currentUser = user;
       portalStatus.textContent = "Login successful. Opening your home page.";
       await showRoleHome(user.role);
     } catch (error) {
       portalStatus.textContent = error.message;
     }
   });
+});
+
+profileForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const profileStatus = profileForm.querySelector("#profileStatus");
+  const data = new FormData(profileForm);
+  const profile = Object.fromEntries(
+    currentProfileQuestions.map((question) => [question.name, data.get(question.name)?.trim() || ""])
+  );
+
+  try {
+    const result = await api(`/api/profiles/${currentUser.role}`, {
+      method: "POST",
+      body: JSON.stringify({
+        email: currentUser.email,
+        profile,
+      }),
+    });
+    const { tabs } = await api(`/api/navigation/${currentUser.role}`);
+    renderSidePanel(currentUser.role, result.profile, tabs);
+    profileStatus.textContent = "Profile saved.";
+    closeProfileModal();
+  } catch (error) {
+    profileStatus.textContent = error.message;
+  }
 });
 
 lawyerEnquiryForm.addEventListener("submit", async (event) => {

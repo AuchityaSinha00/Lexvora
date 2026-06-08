@@ -317,14 +317,16 @@
     </main>
 
     <section class="app-page customer-home" id="customer-home" data-app-page="customer" aria-label="Customer home">
-      <div class="app-hero">
-        <span class="section-kicker">Customer Home</span>
-        <h1>Find the right lawyer for your legal need.</h1>
-        <p>
-          Search by specialization, city, or court name. We will share your contact and enquiry
-          details with the selected lawyer, and share the lawyer's contact details with you.
-        </p>
-      </div>
+      <aside class="side-panel" data-side-panel="customer"></aside>
+      <div class="app-main">
+        <div class="app-hero">
+          <span class="section-kicker">Customer Home</span>
+          <h1>Find the right lawyer for your legal need.</h1>
+          <p>
+            Search by specialization, city, or court name. We will share your contact and enquiry
+            details with the selected lawyer, and share the lawyer's contact details with you.
+          </p>
+        </div>
 
       <div class="workflow-strip" aria-label="Customer legal help process">
         <article>
@@ -477,17 +479,20 @@
           </form>
         </div>
       </div>
+      </div>
     </section>
 
     <section class="app-page admin-home" id="admin-home" data-app-page="admin" aria-label="Admin home">
-      <div class="app-hero admin-app-hero">
-        <span class="section-kicker">Admin Home</span>
-        <h1>Manage customer lawyer enquiries.</h1>
-        <p>
-          Review incoming enquiries, match customers with the right lawyer, and track whether
-          contact details have been shared.
-        </p>
-      </div>
+      <aside class="side-panel" data-side-panel="admin"></aside>
+      <div class="app-main">
+        <div class="app-hero admin-app-hero">
+          <span class="section-kicker">Admin Home</span>
+          <h1>Manage customer lawyer enquiries.</h1>
+          <p>
+            Review incoming enquiries, match customers with the right lawyer, and track whether
+            contact details have been shared.
+          </p>
+        </div>
 
       <form class="case-form" id="lawyerProfileForm">
         <div class="form-section-title">
@@ -568,7 +573,21 @@
           <div class="admin-board" id="adminRequestList"></div>
         </section>
       </div>
+      </div>
     </section>
+
+    <div class="profile-modal" id="profileModal" aria-hidden="true">
+      <div class="login-backdrop"></div>
+      <div class="login-dialog profile-dialog" role="dialog" aria-modal="true" aria-label="Create profile">
+        <span class="section-kicker">Profile Setup</span>
+        <h2 id="profileModalTitle">Create your profile</h2>
+        <p class="payment-note">
+          Complete this basic bio first. The saved profile will appear in your side panel and can
+          later be connected to production database records.
+        </p>
+        <form class="profile-form" id="profileForm"></form>
+      </div>
+    </div>
 
     <footer class="site-footer">
       <a class="brand" href="#home" aria-label="LexVora home">

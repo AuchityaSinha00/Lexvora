@@ -555,6 +555,8 @@ body.modal-open {
   min-height: 100vh;
   padding: 112px clamp(18px, 5vw, 72px) 72px;
   background: var(--paper);
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 24px;
 }
 
 body.is-authenticated main,
@@ -564,7 +566,129 @@ body.is-authenticated .site-footer {
 
 body[data-role="customer"] .customer-home,
 body[data-role="admin"] .admin-home {
-  display: block;
+  display: grid;
+}
+
+.app-main {
+  min-width: 0;
+}
+
+.side-panel {
+  position: sticky;
+  top: 92px;
+  align-self: start;
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(23, 33, 33, 0.06);
+}
+
+.side-profile {
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+
+.side-avatar {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 8px;
+  color: #ffffff;
+  background: var(--primary);
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.side-profile h3 {
+  margin-bottom: 2px;
+}
+
+.side-profile p,
+.side-detail dd {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.side-tabs {
+  display: grid;
+  gap: 8px;
+}
+
+.side-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.side-tab.is-active,
+.side-tab:hover {
+  border-color: rgba(15, 118, 110, 0.2);
+  background: var(--soft);
+}
+
+.side-tab svg {
+  width: 17px;
+  height: 17px;
+  color: var(--primary);
+}
+
+.side-detail {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.side-detail dt {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.profile-modal {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.profile-modal.is-open {
+  display: flex;
+}
+
+.profile-dialog {
+  width: min(100%, 680px);
+}
+
+.profile-form {
+  display: grid;
+  gap: 16px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .app-hero {
@@ -986,8 +1110,14 @@ textarea:focus {
   .workflow-strip,
   .admin-board,
   .lawyer-list,
-  .form-grid {
+  .form-grid,
+  .profile-grid,
+  .app-page {
     grid-template-columns: 1fr;
+  }
+
+  .side-panel {
+    position: static;
   }
 
   .results-head,

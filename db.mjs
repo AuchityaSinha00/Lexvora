@@ -74,6 +74,7 @@ class MemoryRepository {
     // Local/dev fallback only. Production should use Postgres so data survives deploys.
     this.lawyers = [...seedLawyers];
     this.consultationRequests = [];
+    this.profiles = {};
   }
 
   async health() {
@@ -82,6 +83,21 @@ class MemoryRepository {
 
   async listLawyers() {
     return this.lawyers;
+  }
+
+  async getProfile(role, email) {
+    return this.profiles[`${role}:${email}`] || null;
+  }
+
+  async upsertProfile(role, email, profile) {
+    const savedProfile = {
+      ...profile,
+      role,
+      email,
+      updatedAt: new Date().toISOString(),
+    };
+    this.profiles[`${role}:${email}`] = savedProfile;
+    return savedProfile;
   }
 
   async createLawyer(input) {
@@ -153,6 +169,43 @@ class PostgresRepository {
        order by created_at desc`
     );
     return result.rows;
+  }
+
+  async getProfile(role, email) {
+    const result = await this.pool.query(
+      `select role, email, profile_data as "profileData", updated_at as "updatedAt"
+       from user_profiles
+       where role = $1 and email = $2`,
+      [role, email]
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+
+    return {
+      ...row.profileData,
+      role: row.role,
+      email: row.email,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  async upsertProfile(role, email, profile) {
+    const result = await this.pool.query(
+      `insert into user_profiles (role, email, profile_data)
+       values ($1, $2, $3)
+       on conflict (role, email)
+       do update set profile_data = excluded.profile_data, updated_at = now()
+       returning role, email, profile_data as "profileData", updated_at as "updatedAt"`,
+      [role, email, profile]
+    );
+    const row = result.rows[0];
+
+    return {
+      ...row.profileData,
+      role: row.role,
+      email: row.email,
+      updatedAt: row.updatedAt,
+    };
   }
 
   async createLawyer(input) {

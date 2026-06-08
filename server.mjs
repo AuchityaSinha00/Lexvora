@@ -2,6 +2,7 @@ import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { createRepository } from "./db.mjs";
+import { profileQuestions, roleNavigation } from "./mockData.mjs";
 
 const root = process.cwd();
 const port = Number(process.env.PORT || 8080);
@@ -126,6 +127,34 @@ async function handleApi(request, response, url) {
         role: user.role,
       },
     });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname.startsWith("/api/navigation/")) {
+    const role = url.pathname.split("/").at(-1);
+    sendJson(response, 200, { tabs: roleNavigation[role] || [] });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname.startsWith("/api/profile-questions/")) {
+    const role = url.pathname.split("/").at(-1);
+    sendJson(response, 200, { questions: profileQuestions[role] || [] });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname.startsWith("/api/profiles/")) {
+    const role = url.pathname.split("/").at(-1);
+    const email = url.searchParams.get("email") || "";
+    const profile = await repository.getProfile(role, email);
+    sendJson(response, 200, { profile });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname.startsWith("/api/profiles/")) {
+    const role = url.pathname.split("/").at(-1);
+    const body = await readBody(request);
+    const profile = await repository.upsertProfile(role, body.email, body.profile);
+    sendJson(response, 200, { profile });
     return;
   }
 
